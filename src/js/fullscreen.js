@@ -12,16 +12,18 @@ class FullScreen {
             utils.setScrollPosition(this.lastScrollPosition);
         });
 
-        this.fullscreenchange = () => {
+        const fullscreenchange = () => {
             this.player.resize();
             if (this.isFullScreen('browser')) {
+                this.addClass();
                 this.player.events.trigger('fullscreen');
             } else {
+                this.removeClass();
                 utils.setScrollPosition(this.lastScrollPosition);
                 this.player.events.trigger('fullscreen_cancel');
             }
         };
-        this.docfullscreenchange = () => {
+        const docfullscreenchange = () => {
             const fullEle = document.fullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
             if (fullEle && fullEle !== this.player.container) {
                 return;
@@ -35,13 +37,13 @@ class FullScreen {
             }
         };
         if (/Firefox/.test(navigator.userAgent)) {
-            document.addEventListener('mozfullscreenchange', this.docfullscreenchange);
-            document.addEventListener('fullscreenchange', this.docfullscreenchange);
+            document.addEventListener('mozfullscreenchange', docfullscreenchange);
+            document.addEventListener('fullscreenchange', docfullscreenchange);
         } else {
-            this.player.container.addEventListener('fullscreenchange', this.fullscreenchange);
-            this.player.container.addEventListener('webkitfullscreenchange', this.fullscreenchange);
-            document.addEventListener('msfullscreenchange', this.docfullscreenchange);
-            document.addEventListener('MSFullscreenChange', this.docfullscreenchange);
+            this.player.container.addEventListener('fullscreenchange', fullscreenchange);
+            this.player.container.addEventListener('webkitfullscreenchange', fullscreenchange);
+            document.addEventListener('msfullscreenchange', docfullscreenchange);
+            document.addEventListener('MSFullscreenChange', docfullscreenchange);
         }
     }
 
@@ -79,6 +81,9 @@ class FullScreen {
                 }
                 break;
             case 'web':
+                if (this.player.options.onlyWebFullButton) {
+                    this.addClass();
+                }
                 this.player.container.classList.add('dplayer-fulled');
                 document.body.classList.add('dplayer-web-fullscreen-fix');
                 this.player.events.trigger('webfullscreen');
@@ -88,6 +93,14 @@ class FullScreen {
         if (anotherTypeOn) {
             this.cancel(anotherType);
         }
+    }
+
+    addClass() {
+        this.player.container.classList.add('dplayer-browser-fulled');
+    }
+
+    removeClass() {
+        this.player.container.classList.remove('dplayer-browser-fulled');
     }
 
     cancel(type = 'browser') {
@@ -108,6 +121,9 @@ class FullScreen {
                 }
                 break;
             case 'web':
+                if (this.player.options.onlyWebFullButton) {
+                    this.removeClass();
+                }
                 this.player.container.classList.remove('dplayer-fulled');
                 document.body.classList.remove('dplayer-web-fullscreen-fix');
                 this.player.events.trigger('webfullscreen_cancel');
@@ -120,18 +136,6 @@ class FullScreen {
             this.cancel(type);
         } else {
             this.request(type);
-        }
-    }
-
-    destroy() {
-        if (/Firefox/.test(navigator.userAgent)) {
-            document.removeEventListener('mozfullscreenchange', this.docfullscreenchange);
-            document.removeEventListener('fullscreenchange', this.docfullscreenchange);
-        } else {
-            this.player.container.removeEventListener('fullscreenchange', this.fullscreenchange);
-            this.player.container.removeEventListener('webkitfullscreenchange', this.fullscreenchange);
-            document.removeEventListener('msfullscreenchange', this.docfullscreenchange);
-            document.removeEventListener('MSFullscreenChange', this.docfullscreenchange);
         }
     }
 }

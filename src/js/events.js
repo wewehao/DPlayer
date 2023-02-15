@@ -26,6 +26,9 @@ class Events {
             'timeupdate',
             'volumechange',
             'waiting',
+            'report',
+            'highlight',
+            'wantToPlayVideo',
         ];
         this.playerEvents = [
             'screenshot',
@@ -52,6 +55,7 @@ class Events {
             'subtitle_show',
             'subtitle_hide',
             'subtitle_change',
+            'loop_change',
         ];
     }
 

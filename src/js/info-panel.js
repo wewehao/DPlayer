@@ -1,3 +1,11 @@
+/*
+ * @Author: your name
+ * @Date: 2021-09-18 09:54:00
+ * @LastEditTime: 2021-11-01 09:36:08
+ * @LastEditors: weiwenhao
+ * @Description: In User Settings Edit
+ * @FilePath: /dplayer/src/js/info-panel.js
+ */
 /* global DPLAYER_VERSION GIT_HASH */
 
 class InfoPanel {
@@ -37,7 +45,9 @@ class InfoPanel {
     update() {
         this.template.infoVersion.innerHTML = `v${DPLAYER_VERSION} ${GIT_HASH}`;
         this.template.infoType.innerHTML = this.player.type;
-        this.template.infoUrl.innerHTML = this.player.options.video.url;
+        if (this.player.options.video.showUrl && this.template.infoUrl) {
+            this.template.infoUrl.innerHTML = this.player.options.video.url;
+        }
         this.template.infoResolution.innerHTML = `${this.player.video.videoWidth} x ${this.player.video.videoHeight}`;
         this.template.infoDuration.innerHTML = this.player.video.duration;
         if (this.player.options.danmaku) {
@@ -48,7 +58,7 @@ class InfoPanel {
     }
 
     fps(value) {
-        this.template.infoFPS.innerHTML = `${value.toFixed(1)}`;
+        this.template.infoFPS.innerHTML = `${Math.floor(value)}`;
     }
 }
 

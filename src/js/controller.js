@@ -1,39 +1,85 @@
+/*
+ * @Author: weiwenhao
+ * @Date: 2021-08-05 16:55:12
+ * @LastEditTime: 2022-09-02 17:10:07
+ * @LastEditors: weiwenhao
+ * @Description:
+ * @FilePath: /dplayer/src/js/controller.js
+ * If you have any questions please @weiwenhao.
+ */
 import utils from './utils';
 import Thumbnails from './thumbnails';
 import Icons from './icons';
-
-let cast;
-let runOnce = true;
-let isCasting = false;
 
 class Controller {
     constructor(player) {
         this.player = player;
 
+        this.isMoveInController = false;
+
         this.autoHideTimer = 0;
+
+        this.isFocusMode = false;
+
         if (!utils.isMobile) {
-            this.setAutoHideHandler = this.setAutoHide.bind(this);
-            this.player.container.addEventListener('mousemove', this.setAutoHideHandler);
-            this.player.container.addEventListener('click', this.setAutoHideHandler);
-            this.player.on('play', this.setAutoHideHandler);
-            this.player.on('pause', this.setAutoHideHandler);
+            this.player.container.addEventListener('mousemove', () => {
+                console.log('---mousemove---');
+                if (!this.isMoveInController) {
+                    this.setAutoHide();
+                }
+            });
+            this.player.container.addEventListener('mouseleave', () => {
+                console.log('---mouseleave---');
+                const isFullScreen = this.player.fullScreen.isFullScreen('browser');
+                if (this.player.video.played.length && !this.player.paused && !this.disableAutoHide && !this.isFocusMode && !isFullScreen) {
+                    this.hide();
+                }
+            });
+            this.player.container.querySelector('.dplayer-controller').addEventListener('mousemove', () => {
+                console.log('---mousemove 2---');
+                this.isMoveInController = true;
+                this.show();
+                clearTimeout(this.autoHideTimer);
+            });
+            this.player.container.querySelector('.dplayer-controller').addEventListener('mouseleave', () => {
+                console.log('---mouseleave 2---');
+                this.isMoveInController = false;
+                this.setAutoHide();
+            });
+            this.player.container.addEventListener('click', () => {
+                if (!this.isMoveInController) {
+                    this.setAutoHide();
+                }
+            });
+            this.player.on('play', () => {
+                if (!this.isMoveInController) {
+                    this.setAutoHide();
+                }
+            });
+            this.player.on('pause', () => {
+                if (!this.isMoveInController) {
+                    this.setAutoHide();
+                }
+            });
         }
+
+        const progressBar = this.player.options.progressBar || {
+            drag: true,
+            maxTime: -1, // s
+        };
+
+        this.progressBar = progressBar;
 
         this.initPlayButton();
         this.initThumbnails();
         this.initPlayedBar();
         this.initFullButton();
+        this.initClipButton();
         this.initQualityButton();
         this.initScreenshotButton();
-        // if subtitle url not array, not init old single subtitle button
-        if (this.player.options.subtitle) {
-            if (typeof this.player.options.subtitle.url === 'string') {
-                this.initSubtitleButton();
-            }
-        }
+        this.initSubtitleButton();
         this.initHighlights();
         this.initAirplayButton();
-        this.initChromecastButton();
         if (!utils.isMobile) {
             this.initVolumeButton();
         }
@@ -49,14 +95,12 @@ class Controller {
         });
 
         if (!utils.isMobile) {
-            if (!this.player.options.preventClickToggle) {
-                this.player.template.videoWrap.addEventListener('click', () => {
-                    this.player.toggle();
-                });
-                this.player.template.controllerMask.addEventListener('click', () => {
-                    this.player.toggle();
-                });
-            }
+            this.player.template.videoWrap.addEventListener('click', () => {
+                this.player.toggle();
+            });
+            this.player.template.controllerMask.addEventListener('click', () => {
+                this.player.toggle();
+            });
         } else {
             this.player.template.videoWrap.addEventListener('click', () => {
                 this.toggle();
@@ -71,19 +115,82 @@ class Controller {
         this.player.on('durationchange', () => {
             if (this.player.video.duration !== 1 && this.player.video.duration !== Infinity) {
                 if (this.player.options.highlight) {
-                    const highlights = this.player.template.playedBarWrap.querySelectorAll('.dplayer-highlight');
+                    const highlights = document.querySelectorAll('.dplayer-highlight');
                     [].slice.call(highlights, 0).forEach((item) => {
                         this.player.template.playedBarWrap.removeChild(item);
                     });
+
+                    const container = this.player.container;
+                    console.log(container);
+
                     for (let i = 0; i < this.player.options.highlight.length; i++) {
-                        if (!this.player.options.highlight[i].text || !this.player.options.highlight[i].time) {
+                        const v = this.player.options.highlight[i];
+
+                        if (!v.text || !v.time) {
                             continue;
                         }
-                        const p = document.createElement('div');
-                        p.classList.add('dplayer-highlight');
-                        p.style.left = (this.player.options.highlight[i].time / this.player.video.duration) * 100 + '%';
-                        p.innerHTML = '<span class="dplayer-highlight-text">' + this.player.options.highlight[i].text + '</span>';
-                        this.player.template.playedBarWrap.insertBefore(p, this.player.template.playedBarTime);
+                        const dom = document.createElement('div');
+                        dom.classList.add('dplayer-highlight');
+
+                        dom.id = `dplayer-highlight-${v.id || i}`;
+
+                        dom.onmouseover = () => {
+                            const boxEl = dom.querySelector('.dplayer-highlight-box');
+                            const { left: containerLeft, right: containerRight } = container.getBoundingClientRect();
+                            const { left: domLeft, right: domRight } = dom.getBoundingClientRect();
+                            const left = domLeft - containerLeft;
+                            const right = containerRight - domRight;
+                            if (!boxEl) {
+                                return;
+                            }
+                            if (left < 135 / 2) {
+                                boxEl.style.left = `${135 / 2 - left + 12}px`;
+                            }
+                            if (right < 135 / 2) {
+                                boxEl.style.left = `${right - 135 / 2}px`;
+                            }
+                            boxEl.style.display = 'flex';
+                        };
+
+                        dom.onmouseleave = () => {
+                            const boxEl = dom.querySelector('.dplayer-highlight-box');
+                            if (!boxEl) {
+                                return;
+                            }
+                            boxEl.style.display = 'none';
+                        };
+
+                        dom.style.left = (v.time / this.player.video.duration) * 100 + '%';
+
+                        dom.innerHTML = `
+<div class="dplayer-highlight-box" style="background: url(${v.img}) 50% 50% / cover no-repeat;">
+    <div class="dplayer-highlight-bg"></div>
+    <div class="dplayer-highlight-time">${utils.secondToTime(v.time)}</div>
+    <div class="dplayer-highlight-text">${v.text}</div>
+</div>
+`;
+
+                        dom.setAttribute('data-time', v.time);
+
+                        dom.onclick = () => {
+                            // e.stopPropagation();
+                            // 上报事件
+                            this.player.events.trigger('highlight', v);
+                        };
+
+                        dom.remove = () => {
+                            dom.parentElement.removeChild(dom);
+                        };
+
+                        dom.updateText = (text) => {
+                            if (dom.querySelector('.dplayer-highlight-text')) {
+                                dom.querySelector('.dplayer-highlight-text').innerHTML = `${text}`;
+                            }
+                        };
+
+                        // p.innerHTML = '<span class="dplayer-highlight-box">' + v.text + '</span>';
+
+                        this.player.template.playedBarWrap.insertBefore(dom, this.player.template.playedBarTime);
                     }
                 }
             }
@@ -106,74 +213,168 @@ class Controller {
     }
 
     initPlayedBar() {
+        // let canDrag = true;
+
         const thumbMove = (e) => {
+            // if (!canDrag) {
+            //     return;
+            // }
+
+            const maxTime = this.progressBar.maxTime;
+
             let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.playedBarWrap)) / this.player.template.playedBarWrap.clientWidth;
             percentage = Math.max(percentage, 0);
-            percentage = Math.min(percentage, 1);
-            this.player.bar.set('played', percentage, 'width');
-            this.player.template.ptime.innerHTML = utils.secondToTime(percentage * this.player.video.duration);
+
+            let max = 1;
+
+            if (maxTime > -1) {
+                max = maxTime / this.player.video.duration;
+            }
+
+
+            if (max < 0) {
+                max = 0;
+            }
+
+            if (max > 1) {
+                max = 1;
+            }
+
+            if (percentage > max) {
+                percentage = Math.min(percentage, max);
+                this.player.bar.set('played', percentage, 'width');
+                const time = maxTime > -1 ? maxTime : percentage * this.player.video.duration;
+                this.player.template.ptime.innerHTML = utils.secondToTime(time);
+                console.log(`thumbMove progress percentage 1: ${percentage} maxTime: ${maxTime}`);
+            } else {
+                percentage = Math.min(percentage, max);
+                this.player.bar.set('played', percentage, 'width');
+                this.player.template.ptime.innerHTML = utils.secondToTime(percentage * this.player.video.duration);
+                console.log(`thumbMove progress percentage 2: ${percentage}`);
+            }
         };
 
         const thumbUp = (e) => {
+            // canDrag = true;
+
+            // if (e.target && e.target.className === 'dplayer-highlight') {
+            //     canDrag = false;
+            //     return;
+            // }
+
+            const maxTime = this.progressBar.maxTime;
+
             document.removeEventListener(utils.nameMap.dragEnd, thumbUp);
             document.removeEventListener(utils.nameMap.dragMove, thumbMove);
             let percentage = ((e.clientX || e.changedTouches[0].clientX) - utils.getBoundingClientRectViewLeft(this.player.template.playedBarWrap)) / this.player.template.playedBarWrap.clientWidth;
             percentage = Math.max(percentage, 0);
-            percentage = Math.min(percentage, 1);
-            this.player.bar.set('played', percentage, 'width');
-            this.player.seek(this.player.bar.get('played') * this.player.video.duration);
-            this.player.timer.enable('progress');
+
+            let max = 1;
+
+            if (maxTime > -1) {
+                max = maxTime / this.player.video.duration;
+            }
+
+
+            if (max < 0) {
+                max = 0;
+            }
+
+            if (max > 1) {
+                max = 1;
+            }
+
+            if (percentage > max) {
+                percentage = Math.min(percentage, max);
+                this.player.bar.set('played', percentage, 'width');
+                const time = maxTime > -1 ? maxTime : percentage * this.player.video.duration;
+                this.player.seek(time);
+                this.player.timer.enable('progress');
+                console.log(`thumbUp progress percentage 1: ${percentage} maxTime: ${maxTime}`);
+            } else {
+                if (e.target && e.target.className === 'dplayer-highlight') {
+                    const time = e.target.getAttribute('data-time');
+                    percentage = time / this.player.video.duration;
+                }
+                percentage = Math.min(percentage, max);
+                this.player.bar.set('played', percentage, 'width');
+                this.player.seek(this.player.bar.get('played') * this.player.video.duration);
+                this.player.timer.enable('progress');
+                console.log(`thumbUp progress percentage 2: ${percentage}`);
+            }
         };
 
-        this.player.template.playedBarWrap.addEventListener(utils.nameMap.dragStart, () => {
+        this.player.template.playedBarWrap.addEventListener(utils.nameMap.dragStart, (e) => {
+            const drag = this.progressBar.drag;
+
+            if (!drag) {
+                console.log('progress drag false');
+                return;
+            }
+
+            // if (e.target && e.target.className === 'dplayer-highlight') {
+            //     canDrag = false;
+            //     return;
+            // }
+
+            console.log('progress', e);
+
             this.player.timer.disable('progress');
             document.addEventListener(utils.nameMap.dragMove, thumbMove);
             document.addEventListener(utils.nameMap.dragEnd, thumbUp);
         });
 
-        this.player.template.playedBarWrap.addEventListener(utils.nameMap.dragMove, (e) => {
-            if (this.player.video.duration) {
-                const px = this.player.template.playedBarWrap.getBoundingClientRect().left;
-                const tx = (e.clientX || e.changedTouches[0].clientX) - px;
-                if (tx < 0 || tx > this.player.template.playedBarWrap.offsetWidth) {
-                    return;
-                }
-                const time = this.player.video.duration * (tx / this.player.template.playedBarWrap.offsetWidth);
-                if (utils.isMobile) {
-                    this.thumbnails && this.thumbnails.show();
-                }
-                this.thumbnails && this.thumbnails.move(tx);
-                this.player.template.playedBarTime.style.left = `${tx - (time >= 3600 ? 25 : 20)}px`;
-                this.player.template.playedBarTime.innerText = utils.secondToTime(time);
-                this.player.template.playedBarTime.classList.remove('hidden');
-            }
-        });
+        // this.player.template.playedBarWrap.addEventListener(utils.nameMap.dragMove, (e) => {
+        //     if (this.player.video.duration) {
+        //         const px = this.player.template.playedBarWrap.getBoundingClientRect().left;
+        //         const tx = (e.clientX || e.changedTouches[0].clientX) - px;
+        //         if (tx < 0 || tx > this.player.template.playedBarWrap.offsetWidth) {
+        //             return;
+        //         }
+        //         const time = this.player.video.duration * (tx / this.player.template.playedBarWrap.offsetWidth);
+        //         if (utils.isMobile) {
+        //             this.thumbnails && this.thumbnails.show();
+        //         }
+        //         this.thumbnails && this.thumbnails.move(tx);
+        //         this.player.template.playedBarTime.style.left = `${tx - (time >= 3600 ? 25 : 20)}px`;
+        //         this.player.template.playedBarTime.innerText = utils.secondToTime(time);
+        //         this.player.template.playedBarTime.classList.remove('hidden');
+        //     }
+        // });
 
-        this.player.template.playedBarWrap.addEventListener(utils.nameMap.dragEnd, () => {
-            if (utils.isMobile) {
-                this.thumbnails && this.thumbnails.hide();
-            }
-        });
+        // this.player.template.playedBarWrap.addEventListener(utils.nameMap.dragEnd, () => {
+        //     if (utils.isMobile) {
+        //         this.thumbnails && this.thumbnails.hide();
+        //     }
+        // });
 
-        if (!utils.isMobile) {
-            this.player.template.playedBarWrap.addEventListener('mouseenter', () => {
-                if (this.player.video.duration) {
-                    this.thumbnails && this.thumbnails.show();
-                    this.player.template.playedBarTime.classList.remove('hidden');
-                }
-            });
+        // if (!utils.isMobile) {
+        //     this.player.template.playedBarWrap.addEventListener('mouseenter', () => {
+        //         if (this.player.video.duration) {
+        //             this.thumbnails && this.thumbnails.show();
+        //             this.player.template.playedBarTime.classList.remove('hidden');
+        //         }
+        //     });
 
-            this.player.template.playedBarWrap.addEventListener('mouseleave', () => {
-                if (this.player.video.duration) {
-                    this.thumbnails && this.thumbnails.hide();
-                    this.player.template.playedBarTime.classList.add('hidden');
-                }
-            });
-        }
+        //     this.player.template.playedBarWrap.addEventListener('mouseleave', () => {
+        //         if (this.player.video.duration) {
+        //             this.thumbnails && this.thumbnails.hide();
+        //             this.player.template.playedBarTime.classList.add('hidden');
+        //         }
+        //     });
+        // }
     }
 
     initFullButton() {
         this.player.template.browserFullButton.addEventListener('click', () => {
+            if (this.player.options.onFullscreen) {
+                this.player.options.onFullscreen();
+                return;
+            }
+            if (this.player.options.onlyWebFullButton) {
+                this.player.fullScreen.toggle('web');
+                return;
+            }
             this.player.fullScreen.toggle('browser');
         });
 
@@ -182,8 +383,20 @@ class Controller {
         });
     }
 
+    initClipButton() {
+        if (this.player.options.clip) {
+            this.player.template.clipButton.addEventListener('click', () => {
+                if (this.player.options.onClip) {
+                    this.player.options.onClip();
+                    return;
+                }
+                window.open(this.player.options.clip.url);
+            });
+        }
+    }
+
     initVolumeButton() {
-        const vWidth = 35;
+        const vWidth = 50;
 
         const volumeMove = (event) => {
             const e = event || window.event;
@@ -213,7 +426,7 @@ class Controller {
                 this.player.bar.set('volume', this.player.volume(), 'width');
             } else {
                 this.player.video.muted = true;
-                this.player.template.volumeIcon.innerHTML = Icons.volumeOff;
+                this.player.template.volumeIcon.innerHTML = `<img class="dplayer-icon-img" src="${Icons.volumeOff}"/>`;
                 this.player.bar.set('volume', 0, 'width');
             }
         });
@@ -248,8 +461,9 @@ class Controller {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(dataURL);
-                    this.player.events.trigger('screenshot', dataURL);
                 });
+
+                this.player.events.trigger('screenshot', dataURL);
             });
         }
     }
@@ -283,111 +497,48 @@ class Controller {
         }
     }
 
-    initChromecast() {
-        const script = window.document.createElement('script');
-        script.setAttribute('type', 'text/javascript');
-        script.setAttribute('src', 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1');
-        window.document.body.appendChild(script);
+    initSubtitleButton() {
+        if (this.player.options.subtitle) {
+            this.player.events.on('subtitle_show', () => {
+                this.player.template.subtitleButton.classList.remove('dplayer-subtitle-on');
+            });
+            this.player.events.on('subtitle_hide', () => {
+                this.player.template.subtitleButton.classList.add('dplayer-subtitle-on');
+            });
 
-        window.__onGCastApiAvailable = (isAvailable) => {
-            if (isAvailable) {
-                cast = window.chrome.cast;
-                const sessionRequest = new cast.SessionRequest(cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID);
-                const apiConfig = new cast.ApiConfig(
-                    sessionRequest,
-                    () => {},
-                    (status) => {
-                        if (status === cast.ReceiverAvailability.AVAILABLE) {
-                            console.log('chromecast: ', status);
-                        }
-                    }
-                );
-                cast.initialize(apiConfig, () => {});
-            }
-        };
-    }
-
-    initChromecastButton() {
-        if (this.player.options.chromecast) {
-            if (runOnce) {
-                runOnce = false;
-                this.initChromecast();
-            }
-            const discoverDevices = () => {
-                cast.requestSession(
-                    (s) => {
-                        this.session = s;
-                        launchMedia(this.player.options.video.url);
-                    },
-                    (err) => {
-                        if (err.code === 'cancel') {
-                            this.session = undefined;
-                        } else {
-                            console.error('Error selecting a cast device', err);
-                        }
-                    }
-                );
-            };
-
-            const launchMedia = (media) => {
-                const mediaInfo = new cast.media.MediaInfo(media);
-                const request = new cast.media.LoadRequest(mediaInfo);
-
-                if (!this.session) {
-                    window.open(media);
-                    return false;
+            this.player.template.subtitleButton.addEventListener('click', () => {
+                if (this.player.options.onSubtitle) {
+                    this.player.options.onSubtitle();
+                    return;
                 }
-                this.session.loadMedia(request, onMediaDiscovered.bind(this, 'loadMedia'), onMediaError).play();
-                return true;
-            };
-
-            const onMediaDiscovered = (how, media) => {
-                this.currentMedia = media;
-            };
-
-            const onMediaError = (err) => {
-                console.error('Error launching media', err);
-            };
-
-            this.player.template.chromecastButton.addEventListener('click', () => {
-                if (isCasting) {
-                    isCasting = false;
-                    this.currentMedia.stop();
-                    this.session.stop();
-                    this.initChromecast();
-                } else {
-                    isCasting = true;
-                    discoverDevices();
-                }
+                this.player.subtitle.toggle();
             });
         }
     }
 
-    initSubtitleButton() {
-        this.player.events.on('subtitle_show', () => {
-            this.player.template.subtitleButton.dataset.balloon = this.player.tran('hide-subs');
-            this.player.template.subtitleButtonInner.style.opacity = '';
-            this.player.user.set('subtitle', 1);
-        });
-        this.player.events.on('subtitle_hide', () => {
-            this.player.template.subtitleButton.dataset.balloon = this.player.tran('show-subs');
-            this.player.template.subtitleButtonInner.style.opacity = '0.4';
-            this.player.user.set('subtitle', 0);
-        });
+    setProgressBarDrag(bool) {
+        this.progressBar.drag = !!bool;
+    }
 
-        this.player.template.subtitleButton.addEventListener('click', () => {
-            this.player.subtitle.toggle();
-        });
+    setProgressBarMax(value) {
+        if (value < 0) {
+            value = 0;
+        }
+        if (value > 1) {
+            value = 1;
+        }
+        this.progressBar.max = value;
     }
 
     setAutoHide() {
         this.show();
         clearTimeout(this.autoHideTimer);
         this.autoHideTimer = setTimeout(() => {
-            if (this.player.video.played.length && !this.player.paused && !this.disableAutoHide) {
+            if (this.player.video.played.length && !this.player.paused && !this.disableAutoHide && !this.isFocusMode) {
+                console.log('---setAutoHide hide---');
                 this.hide();
             }
-        }, 3000);
+        }, 1500);
     }
 
     show() {
@@ -395,6 +546,7 @@ class Controller {
     }
 
     hide() {
+        console.log('---hide---');
         this.player.container.classList.add('dplayer-hide-controller');
         this.player.setting.hide();
         this.player.comment && this.player.comment.hide();
@@ -405,6 +557,7 @@ class Controller {
     }
 
     toggle() {
+        console.log('---toggle---');
         if (this.isShow()) {
             this.hide();
         } else {
@@ -413,11 +566,30 @@ class Controller {
     }
 
     destroy() {
-        if (!utils.isMobile) {
-            this.player.container.removeEventListener('mousemove', this.setAutoHideHandler);
-            this.player.container.removeEventListener('click', this.setAutoHideHandler);
-        }
         clearTimeout(this.autoHideTimer);
+    }
+
+    setFocusMode(bool) {
+        console.log('---setFocusMode---');
+        this.isFocusMode = bool;
+
+        if (!bool) {
+            this.setAutoHide();
+        } else {
+            this.show();
+        }
+
+        if (bool) {
+            if (!this.player.container.classList.contains('dplayer-focus-mode')) {
+                this.player.container.classList.add('dplayer-focus-mode');
+            }
+            return;
+        }
+        this.player.container.classList.remove('dplayer-focus-mode');
+    }
+
+    toggleFocusMode() {
+        this.setFocusMode(!this.isFocusMode);
     }
 }
 

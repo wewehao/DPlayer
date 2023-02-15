@@ -7,16 +7,9 @@
     {{ if pic }}poster="{{ pic }}"{{ /if }}
     {{ if screenshot || enableSubtitle }}crossorigin="anonymous"{{ /if }}
     {{ if preload }}preload="{{ preload }}"{{ /if }}
-    {{ if airplay }}
-    nosrc
-    {{ else if url }}
-    src="{{ url }}"
-    {{ /if }}
+    {{ if url }}src="{{ url }}"{{ /if }}
     >
-    {{ if airplay }}
-    <source src="{{ url }}">
-    {{ /if}}
     {{ if enableSubtitle }}
-    <track class="dplayer-subtrack" kind="metadata" default src="{{ typeof subtitle.url === 'string' ? subtitle.url : subtitle.url[subtitle.index].url }}"></track>
+    <track kind="metadata" default src="{{ subtitle.url }}"></track>
     {{ /if }}
 </video>

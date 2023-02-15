@@ -44,15 +44,25 @@
         line-height: 14px;
         animation: my-face 5s infinite ease-in-out;
     }
-    .diplayer-loading-icon {
+    .dplayer-loading-wrap {
         display: none;
         position: absolute;
         top: 50%;
         left: 50%;
-        margin: -18px 0 0 -18px;
-        height: 36px;
-        width: 36px;
+        margin: -22px 0 0 -160px;
+        text-align: center;
+        width: 320px;
+
+        .dplayer-loading-text {
+            font-size: 16px;
+        }
+    }
+    .dplayer-loading-icon {
+        display: block;
+        width: 44px;
+        height: 44px;
         pointer-events: none;
+        margin: 0 auto;
         .diplayer-loading-hide {
             display: none;
         }
@@ -60,11 +70,11 @@
             animation: diplayer-loading-dot-fade .8s ease infinite;
             opacity: 0;
             transform-origin: 4px 4px;
-            each(range(7), {
-                &.diplayer-loading-dot-@{value} {
-                    animation-delay: (@value * 0.1s);
+            @for $i from 7 through 1 {
+                &.diplayer-loading-dot-#{$i} {
+                    animation-delay: .1s * $i;
                 }
-            });
+            }
         }
         @keyframes diplayer-loading-dot-fade {
             0% {

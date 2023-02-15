@@ -1,3 +1,12 @@
+/*
+ * @Author: weiwenhao
+ * @Date: 2021-08-05 16:55:12
+ * @LastEditTime: 2021-09-09 18:58:46
+ * @LastEditors: weiwenhao
+ * @Description:
+ * @FilePath: /dplayer/src/js/options.js
+ * If you have any questions please @weiwenhao.
+ */
 /* global DPLAYER_VERSION */
 import defaultApiBackend from './api.js';
 
@@ -7,22 +16,21 @@ export default (options) => {
         container: options.element || document.getElementsByClassName('dplayer')[0],
         live: false,
         autoplay: false,
-        theme: '#b7daff',
+        theme: '#5E51F6',
         loop: false,
         lang: (navigator.language || navigator.browserLanguage).toLowerCase(),
         screenshot: false,
         airplay: true,
-        chromecast: false,
         hotkey: true,
         preload: 'metadata',
         volume: 0.7,
-        playbackSpeed: [0.5, 0.75, 1, 1.25, 1.5, 2],
+        playbackSpeed: [2, 1.5, 1.25, 1, 0.75, 0.5],
         apiBackend: defaultApiBackend,
         video: {},
         contextmenu: [],
         mutex: true,
         pluginOptions: { hls: {}, flv: {}, dash: {}, webtorrent: {} },
-        preventClickToggle: false,
+        watermark: {},
     };
     for (const defaultKey in defaultOption) {
         if (defaultOption.hasOwnProperty(defaultKey) && !options.hasOwnProperty(defaultKey)) {
@@ -37,8 +45,8 @@ export default (options) => {
     }
     if (options.subtitle) {
         !options.subtitle.type && (options.subtitle.type = 'webvtt');
-        !options.subtitle.fontSize && (options.subtitle.fontSize = '20px');
-        !options.subtitle.bottom && (options.subtitle.bottom = '40px');
+        !options.subtitle.fontSize && (options.subtitle.fontSize = '22px');
+        !options.subtitle.bottom && (options.subtitle.bottom = '55px');
         !options.subtitle.color && (options.subtitle.color = '#fff');
     }
 
@@ -52,13 +60,13 @@ export default (options) => {
 
     options.contextmenu = options.contextmenu.concat([
         {
-            key: 'video-info',
+            text: 'Video info',
             click: (player) => {
                 player.infoPanel.triggle();
             },
         },
         {
-            key: 'about-author',
+            text: 'About author',
             link: 'https://diygod.me',
         },
         {

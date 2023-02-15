@@ -12,23 +12,26 @@ class ContextMenu {
             }
         });
 
-        this.contextmenuHandler = (e) => {
-            if (this.shown) {
-                this.hide();
-                return;
-            }
-
+        this.player.container.addEventListener('contextmenu', (e) => {
             const event = e || window.event;
             event.preventDefault();
 
-            const clientRect = this.player.container.getBoundingClientRect();
-            this.show(event.clientX - clientRect.left, event.clientY - clientRect.top);
+            return;
+            // if (this.shown) {
+            //     this.hide();
+            //     return;
+            // }
 
-            this.player.template.mask.addEventListener('click', () => {
-                this.hide();
-            });
-        };
-        this.player.container.addEventListener('contextmenu', this.contextmenuHandler);
+            // const event = e || window.event;
+            // event.preventDefault();
+
+            // const clientRect = this.player.container.getBoundingClientRect();
+            // this.show(event.clientX - clientRect.left, event.clientY - clientRect.top);
+
+            // this.player.template.mask.addEventListener('click', () => {
+            //     this.hide();
+            // });
+        });
     }
 
     show(x, y) {
@@ -62,10 +65,6 @@ class ContextMenu {
 
         this.shown = false;
         this.player.events.trigger('contextmenu_hide');
-    }
-
-    destroy() {
-        this.player.container.removeEventListener('contextmenu', this.contextmenuHandler);
     }
 }
 

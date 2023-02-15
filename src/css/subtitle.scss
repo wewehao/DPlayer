@@ -1,0 +1,30 @@
+.dplayer-subtitle {
+  position: absolute;
+  // width: calc(100% - 60px);
+  // left: 30px;
+  // text-align: center;
+  bottom: 55px;
+  font-size: 22px;
+  font-weight: 500;
+  font-family: HelveticaNeue-Medium, HelveticaNeue;
+  color: #FFFFFF;
+  line-height: 44px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  padding: 0 16px;
+  box-sizing: border-box;
+
+  max-width: calc(100% - 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: justify;
+  width: max-content;
+
+  &.dplayer-subtitle-hide {
+    display: none;
+  }
+
+  p {
+    margin: 0;
+  }
+}

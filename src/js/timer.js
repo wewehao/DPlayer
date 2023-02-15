@@ -8,7 +8,7 @@ class Timer {
             window.mozRequestAnimationFrame ||
             window.oRequestAnimationFrame ||
             window.msRequestAnimationFrame ||
-            function (callback) {
+            function(callback) {
                 window.setTimeout(callback, 1000 / 60);
             })();
 
@@ -35,6 +35,7 @@ class Timer {
                 // whether the video is buffering
                 currentPlayPos = this.player.video.currentTime;
                 if (!bufferingDetected && currentPlayPos === lastPlayPos && !this.player.video.paused) {
+                    console.log('dplayer-loading loadingChecker');
                     this.player.container.classList.add('dplayer-loading');
                     bufferingDetected = true;
                 }

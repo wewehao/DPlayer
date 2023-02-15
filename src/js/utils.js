@@ -1,4 +1,25 @@
-const isMobile = /mobile/i.test(window.navigator.userAgent);
+// const isMobile = /mobile/i.test(window.navigator.userAgent) || window.innerWidth <= 500;
+
+const os = function () {
+    const ua = navigator.userAgent,
+        isWindowsPhone = /(?:Windows Phone)/.test(ua),
+        isSymbian = /(?:SymbianOS)/.test(ua) || isWindowsPhone,
+        isAndroid = /(?:Android)/.test(ua),
+        isFireFox = /(?:Firefox)/.test(ua),
+        isChrome = /(?:Chrome|CriOS)/.test(ua),
+        isTablet = /(?:iPad|PlayBook)/.test(ua) || (isAndroid && !/(?:Mobile)/.test(ua)) || (isFireFox && /(?:Tablet)/.test(ua)),
+        isPhone = /(?:iPhone)/.test(ua) && !isTablet,
+        isPc = !isPhone && !isAndroid && !isSymbian;
+
+    return {
+        isTablet: isTablet,
+        isPhone: isPhone,
+        isAndroid: isAndroid,
+        isPc: isPc
+    };
+}();
+
+const isMobile = !os.isTablet && (os.isPhone || os.isAndroid);
 
 const utils = {
     /**
@@ -92,8 +113,6 @@ const utils = {
     isFirefox: /firefox/i.test(window.navigator.userAgent),
 
     isChrome: /chrome/i.test(window.navigator.userAgent),
-
-    isSafari: /safari/i.test(window.navigator.userAgent),
 
     storage: {
         set: (key, value) => {

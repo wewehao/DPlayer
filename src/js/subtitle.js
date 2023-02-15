@@ -4,6 +4,7 @@ class Subtitle {
         this.video = video;
         this.options = options;
         this.events = events;
+        this._subtitles = [];
 
         this.init();
     }
@@ -17,19 +18,48 @@ class Subtitle {
             const track = this.video.textTracks[0];
 
             track.oncuechange = () => {
-                const cue = track.activeCues[track.activeCues.length - 1];
+                const cue = track.activeCues[0];
+
                 this.container.innerHTML = '';
                 if (cue) {
                     const template = document.createElement('div');
                     template.appendChild(cue.getCueAsHTML());
-                    const trackHtml = template.innerHTML
-                        .split(/\r?\n/)
-                        .map((item) => `<p>${item}</p>`)
-                        .join('');
+                    const trackHtml = template.innerHTML.split(/\r?\n/).map((item) => `<p>${item}</p>`).join('');
                     this.container.innerHTML = trackHtml;
+
+                    try {
+                        const { id, startTime, endTime, text } = cue;
+
+                        this.events.trigger('subtitle_change', {
+                            index: Number(id),
+                            startTime,
+                            endTime,
+                            text,
+                        });
+                    } catch (err) {
+                        console.log(err);
+                    }
                 }
-                this.events.trigger('subtitle_change');
             };
+        }
+    }
+
+    getSubtitle(index) {
+        if (this.video.textTracks && this.video.textTracks[0]) {
+            const track = this.video.textTracks[0];
+            if (track && track.cues) {
+                return track.cues[index];
+            }
+        }
+        return '';
+    }
+
+    updateSubtitle(index, text) {
+        if (this.video.textTracks && this.video.textTracks[0]) {
+            const track = this.video.textTracks[0];
+            if (track && track.cues && track.cues[index]) {
+                track.cues[index].text = text;
+            }
         }
     }
 

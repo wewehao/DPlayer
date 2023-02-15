@@ -1,5 +1,5 @@
 body {
-    max-width: 700px;
+    /* max-width: 700px; */
     margin: 0 auto;
     padding: 45px 10px;
     position: relative;
@@ -166,6 +166,10 @@ summary {
     .github-corner .octo-arm {
         animation: octocat-wave 560ms ease-in-out
     }
+}
+
+.markdown-body img  {
+    background-color: unset !important;
 }
 
 /* modernizr */

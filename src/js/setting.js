@@ -1,4 +1,6 @@
 import utils from './utils';
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
 
 class Setting {
     constructor(player) {
@@ -14,15 +16,55 @@ class Setting {
         // loop
         this.loop = this.player.options.loop;
         this.player.template.loopToggle.checked = this.loop;
+        if (this.loop) {
+            this.player.template.loop.classList.toggle('dplayer-loop-on');
+        }
         this.player.template.loop.addEventListener('click', () => {
             this.player.template.loopToggle.checked = !this.player.template.loopToggle.checked;
+            this.player.template.loop.classList.toggle('dplayer-loop-on');
             if (this.player.template.loopToggle.checked) {
                 this.loop = true;
             } else {
                 this.loop = false;
             }
             this.hide();
+            this.player.events.trigger('loop_change', this.loop);
         });
+
+        if (this.player.template.loop) {
+            tippy('.dplayer-loop-on-img', {
+                content: `<span style="word-break: keep-all;">${this.player.tran('Close Loop')}</span>`,
+                allowHTML: true,
+                appendTo: this.player.template.loop,
+            });
+
+            tippy('.dplayer-loop-off-img', {
+                content: `<span style="word-break: keep-all;">${this.player.tran('Open Loop')}</span>`,
+                allowHTML: true,
+                appendTo: this.player.template.loop,
+            });
+        }
+
+        if (this.player.template.clipButton) {
+            tippy('.dplayer-clip-img', {
+                content: `<span style="word-break: keep-all;">${this.player.tran('Edit')}</span>`,
+                allowHTML: true,
+                appendTo: this.player.template.clipButton,
+            });
+        }
+
+        if (this.player.template.subtitleButton) {
+            tippy('.dplayer-subtitle-on-img', {
+                content: `<span style="word-break: keep-all;">${this.player.tran('Close subtitle')}</span>`,
+                allowHTML: true,
+                appendTo: this.player.template.subtitleButton,
+            });
+            tippy('.dplayer-subtitle-off-img', {
+                content: `<span style="word-break: keep-all;">${this.player.tran('Open subtitle')}</span>`,
+                allowHTML: true,
+                appendTo: this.player.template.subtitleButton,
+            });
+        }
 
         // show danmaku
         this.showDanmaku = this.player.user.get('danmaku');
@@ -61,12 +103,15 @@ class Setting {
 
         // speed
         this.player.template.speed.addEventListener('click', () => {
-            this.player.template.settingBox.classList.add('dplayer-setting-box-narrow');
-            this.player.template.settingBox.classList.add('dplayer-setting-box-speed');
+            this.player.template.mask.classList.add('dplayer-mask-show');
+            this.player.controller.disableAutoHide = true;
+            this.player.template.speedBox.classList.toggle('dplayer-speed-wrap-open');
         });
         for (let i = 0; i < this.player.template.speedItem.length; i++) {
             this.player.template.speedItem[i].addEventListener('click', () => {
-                this.player.speed(this.player.template.speedItem[i].dataset.speed);
+                const speedValue = this.player.template.speedItem[i].dataset.speed;
+                this.player.template.speed.querySelector('.dplayer-icon-content').innerHTML = `x${speedValue}`;
+                this.player.speed(speedValue);
                 this.hide();
             });
         }
@@ -111,9 +156,9 @@ class Setting {
     hide() {
         this.player.template.settingBox.classList.remove('dplayer-setting-box-open');
         this.player.template.mask.classList.remove('dplayer-mask-show');
+
         setTimeout(() => {
-            this.player.template.settingBox.classList.remove('dplayer-setting-box-narrow');
-            this.player.template.settingBox.classList.remove('dplayer-setting-box-speed');
+            this.player.template.speedBox.classList.remove('dplayer-speed-wrap-open');
         }, 300);
 
         this.player.controller.disableAutoHide = false;
